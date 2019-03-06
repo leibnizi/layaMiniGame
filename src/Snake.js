@@ -2,7 +2,7 @@ let
 	seg,
 	segments = [],
 	foods = [],
-	initialSegmentsAmount = 5,
+	initialSegmentsAmount = 7,
 	vx = 0, 
 	vy = 0,
 	targetPosition;
@@ -29,8 +29,9 @@ class InputDevice_GluttonousSnake {
 
 		// 初始化蛇
 		this.initSnake();
-		// 监视加速器状态
-		Accelerator.instance.on(Event.CHANGE, this, this.monitorAccelerator);
+        // 监视加速器状态
+        console.log('Laya', Laya)
+		// Accelerator.instance.on(Event.CHANGE, this, this.monitorAccelerator);
 		// 游戏循环
 		Laya.timer.frameLoop(1, this, this.animate);
 		// 食物生产
@@ -57,10 +58,6 @@ class InputDevice_GluttonousSnake {
 				targetPosition.y = Laya.stage.height / 2;
 				
 				header.pos(targetPosition.x + header.width, targetPosition.y);
-				
-				// 蛇眼睛绘制
-				header.graphics.drawCircle(header.width, 5, 3, "#000000");
-				header.graphics.drawCircle(header.width, -5, 3, "#000000");
 			}
 		}
 	}
@@ -68,22 +65,6 @@ class InputDevice_GluttonousSnake {
 	monitorAccelerator(acceleration, accelerationIncludingGravity, rotationRate, interval) {
 		vx = accelerationIncludingGravity.x;
 		vy = accelerationIncludingGravity.y;
-	}
-
-	addSegment() {
-		let seg = new Segment(40, 30);
-		Laya.stage.addChildAt(seg, 0);
-		
-		// 蛇尾与上一节身体对齐
-		if (segments.length > 0) {
-			let prevSeg = segments[segments.length - 1];
-			seg.rotation = prevSeg.rotation;
-			let point = seg.getPinPosition();
-			seg.x = prevSeg.x - point.x;
-			seg.y = prevSeg.y - point.y;
-		}
-		
-		segments.push(seg);
 	}
 
 	animate() {
@@ -163,29 +144,6 @@ class InputDevice_GluttonousSnake {
 		
 		food.x = Math.random() * Laya.stage.width;
 		food.y = Math.random() * Laya.stage.height;
-	}
-}
-
-class Segment extends Laya.Sprite {
-	constructor(width, height) {
-		super();
-		this.size(width, height);
-		this.init();
-	}
-	
-	init() {
-		this.graphics.drawRect(-this.height / 2, -this.height / 2, this.width + this.height, this.height, "#FF7F50");
-	}
-	
-	// 获取关节另一头位置
-	getPinPosition() {
-		const Point = Laya.Point;
-
-		let radian = this.rotation * Math.PI / 180;
-		let tx = this.x + Math.cos(radian) * this.width;
-		let ty = this.y + Math.sin(radian) * this.width;
-		
-		return new Point(tx, ty);
 	}
 }
 
