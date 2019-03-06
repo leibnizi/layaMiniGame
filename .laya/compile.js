@@ -30,7 +30,7 @@ gulp.task("compile", prevTasks, function () {
 		basedir: workSpaceDir,
 		//是否开启调试，开启后会生成jsmap，方便调试es6源码，但会影响编译速度
 		debug: true,
-		entries: ['src/Main.js'],
+		entries: ['src/Snake.js'],
 		cache: {},
 		packageCache: {}
 	})
