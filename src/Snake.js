@@ -4,6 +4,7 @@ let seg,
   initialSegmentsAmount = 5,
   vx = 0,
   vy = 0,
+  characterA,
   targetPosition;
 
 class InputDevice_GluttonousSnake {
@@ -24,11 +25,10 @@ class InputDevice_GluttonousSnake {
 
     Laya.stage.scaleMode = Stage.SCALE_SHOWALL;
     Laya.stage.bgColor = "#232628";
+    console.log("Laya.stage: ", Laya.stage);
 
     // 初始化蛇
     this.initSnake();
-    // 监视加速器状态
-    Laya.stage.on(Event.MOUSE_DOWN, this, this.onMouseDown);
     // 游戏循环
     Laya.timer.frameLoop(1, this, this.animate);
     // 食物生产
@@ -36,28 +36,39 @@ class InputDevice_GluttonousSnake {
     // 游戏开始时有一个食物
     this.produceFood();
 
-    this.tween();
+    this.initCharacter();
+    Laya.stage.on(Event.MOUSE_DOWN, this, this.onMouseDown);
   }
 
-  tween() {
-    const Tween = Laya.Tween;
+  initCharacter() {
+    const {
+      stage: { designWidth, designHeight },
+      Tween
+    } = Laya;
+    this.characterA = this.createCharacter("../laya/assets/comp/1.png");
+    this.characterA.pivot(46.5, 50);
+    this.characterA.x = designWidth / 2;
+    this.characterA.y = designHeight - 100;
+  }
 
-    let terminalX = 800;
+  onMouseDown() {
+    const { Event, Tween } = Laya;
+    Tween.to(this.characterA, { y: 0 }, 2000);
+    Laya.stage.on(Event.MOUSE_MOVE, this, this.onMouseMove);
+  }
 
-    let characterA = this.createCharacter("../laya/assets/comp/1.png");
-    characterA.pivot(46.5, 50);
-    characterA.y = 100;
+  tweenRight() {
+    console.log("Tween: ", Tween);
 
-    Laya.stage.graphics.drawLine(
-      terminalX,
-      0,
-      terminalX,
-      Laya.stage.height,
-      "#FFFFFF"
-    );
-
-    // characterA使用Tween.to缓动
-    Tween.to(characterA, { x: terminalX }, 1000);
+    // Laya.stage.graphics.drawLine(
+    //   terminalX,
+    //   0,
+    //   terminalX,
+    //   Laya.stage.height,
+    //   "#FFFFFF"
+    // );
+    Laya.stage.on(Event.MOUSE_UP, this, this.onMouseUp);
+    Tween.to(characterA, { x: terminalX }, 2000);
   }
 
   createCharacter(skin) {
@@ -95,15 +106,6 @@ class InputDevice_GluttonousSnake {
     }
   }
 
-  onMouseDown() {
-    const Event = Laya.Event;
-    console.log("Laya.stage.mouseX", Laya.stage.mouseX, Laya.stage.mouseY);
-    //添加鼠标移到侦听
-    Laya.stage.on(Event.MOUSE_MOVE, this, this.onMouseMove);
-
-    Laya.stage.on(Event.MOUSE_UP, this, this.onMouseUp);
-  }
-
   onMouseUp() {
     const { mouseX, mouseY } = Laya.stage;
     if (mouseX > mouseY) {
@@ -130,14 +132,16 @@ class InputDevice_GluttonousSnake {
   }
 
   animate() {
+    const Tween = Laya.Tween;
     let seg = segments[0];
 
     // 更新蛇的位置
-    while (targetPosition.x > 0) {
-      clearInterval(this.interval);
-      this.interval = setInterval(targetPosition.x--, 1500);
-    }
-    // targetPosition.y += vy;
+    // while (targetPosition.x > 0) {
+    //   clearInterval(this.interval);
+    //   this.interval = setInterval(targetPosition.x--, 1500);
+    // }
+    // targetPosition.pivot(46.5, 50);
+    Tween.to(targetPosition, { x: 0 }, 0);
 
     // 限制蛇的移动范围
     this.limitMoveRange();
