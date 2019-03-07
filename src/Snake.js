@@ -1,182 +1,241 @@
-let
-	seg,
-	segments = [],
-	foods = [],
-	initialSegmentsAmount = 7,
-	vx = 0,
-	vy = 0,
-	targetPosition;
+let seg,
+  segments = [],
+  foods = [],
+  initialSegmentsAmount = 5,
+  vx = 0,
+  vy = 0,
+  targetPosition;
 
 class InputDevice_GluttonousSnake {
-	constructor() {
-		const
-			Browser = Laya.Browser,
-			WebGL = Laya.WebGL,
-			Stage = Laya.Stage,
-			Event = Laya.Event;
+  constructor() {
+    const Browser = Laya.Browser,
+      WebGL = Laya.WebGL,
+      Stage = Laya.Stage,
+      Stat = Laya.Stat,
+      Handler = Laya.Handler,
+      Event = Laya.Event,
+      Accelerator = Laya.Accelerator;
 
-		// 不支持WebGL时自动切换至Canvas
-		Laya.init(Browser.width, Browser.height, WebGL);
+    // 不支持WebGL时自动切换至Canvas
+    Laya.init(Browser.width, Browser.height, WebGL);
 
-		Laya.stage.alignV = Stage.ALIGN_MIDDLE;
-		Laya.stage.alignH = Stage.ALIGN_CENTER;
+    Laya.stage.alignV = Stage.ALIGN_MIDDLE;
+    Laya.stage.alignH = Stage.ALIGN_CENTER;
 
-		Laya.stage.scaleMode = Stage.SCALE_SHOWALL;
-		Laya.stage.bgColor = "#232628";
+    Laya.stage.scaleMode = Stage.SCALE_SHOWALL;
+    Laya.stage.bgColor = "#232628";
 
-		// 初始化蛇
-		this.initSnake();
-		// 监视滑动
-		// Laya.stage.on(Event.MOUSE_DOWN, this, this.onMouseDown);
-		// 游戏循环
-		Laya.timer.frameLoop(1, this, this.animate);
-		// 食物生产
-		Laya.timer.loop(3000, this, this.produceFood);
-		// 游戏开始时有一个食物
-		this.produceFood();
-	}
+    // 初始化蛇
+    this.initSnake();
+    // 监视加速器状态
+    Laya.stage.on(Event.MOUSE_DOWN, this, this.onMouseDown);
+    // 游戏循环
+    Laya.timer.frameLoop(1, this, this.animate);
+    // 食物生产
+    Laya.timer.loop(3000, this, this.produceFood);
+    // 游戏开始时有一个食物
+    this.produceFood();
 
-	/**按下事件处理*/
-	onMouseDown(e) {
-		const Event = Laya.Event;
+    this.tween();
+  }
 
-		//添加鼠标移到侦听
-		Laya.stage.on(Event.MOUSE_MOVE, this, this.onMouseMove);
-		buttonPosition = this.button.x;
+  tween() {
+    const Tween = Laya.Tween;
 
-		Laya.stage.on(Event.MOUSE_UP, this, this.onMouseUp);
-		Laya.stage.on(Event.MOUSE_OUT, this, this.onMouseUp);
-	}
+    let terminalX = 800;
 
-	initSnake() {
-		const
-			Point = Laya.Point;
+    let characterA = this.createCharacter("../laya/assets/comp/1.png");
+    characterA.pivot(46.5, 50);
+    characterA.y = 100;
 
-		for (let i = 0; i < initialSegmentsAmount; i++) {
+    Laya.stage.graphics.drawLine(
+      terminalX,
+      0,
+      terminalX,
+      Laya.stage.height,
+      "#FFFFFF"
+    );
 
-			// 蛇头部设置
-			if (i == 0) {
-				let seg = new Segment(40, 30);
-				Laya.stage.addChildAt(seg, 0);
-				segments.push(seg);
-				let header = segments[0];
+    // characterA使用Tween.to缓动
+    Tween.to(characterA, { x: terminalX }, 1000);
+  }
 
-				// 初始化位置
-				// header.rotation = 180;
-				targetPosition = new Point();
-				targetPosition.x = Laya.stage.width / 2;
-				targetPosition.y = Laya.stage.height / 2;
+  createCharacter(skin) {
+    const Sprite = Laya.Sprite;
 
-				header.pos(targetPosition.x + header.width, targetPosition.y);
-			}
-		}
-	}
+    let character = new Sprite();
+    character.loadImage(skin);
+    Laya.stage.addChild(character);
 
-	monitorAccelerator(acceleration, accelerationIncludingGravity, rotationRate, interval) {
-		vx = accelerationIncludingGravity.x;
-		vy = accelerationIncludingGravity.y;
-	}
+    return character;
+  }
 
-	animate() {
-		let seg = segments[0];
+  initSnake() {
+    const Point = Laya.Point;
 
-		// 更新蛇的位置
-		targetPosition.x += vx;
-		targetPosition.y += vy;
+    for (let i = 0; i < initialSegmentsAmount; i++) {
+      this.addSegment();
 
-		// 限制蛇的移动范围
-		this.limitMoveRange();
-		// 检测觅食
-		// this.checkEatFood();
+      // 蛇头部设置
+      if (i == 0) {
+        let header = segments[0];
 
-		// 更新所有关节位置
-		let targetX = targetPosition.x;
-		let targetY = targetPosition.y;
+        // 初始化位置
+        header.rotation = 180;
+        targetPosition = new Point();
+        targetPosition.x = Laya.stage.width / 2;
+        targetPosition.y = Laya.stage.height / 2;
 
-		for (let i = 0, len = segments.length; i < len; i++) {
-			seg = segments[i];
+        header.pos(targetPosition.x + header.width, targetPosition.y);
 
-			let dx = targetX - seg.x;
-			let dy = targetY - seg.y;
+        // 蛇眼睛绘制
+        header.graphics.drawCircle(header.width, 5, 3, "#000000");
+        header.graphics.drawCircle(header.width, -5, 3, "#000000");
+      }
+    }
+  }
 
-			let radian = Math.atan2(dy, dx);
-			seg.rotation = radian * 180 / Math.PI;
+  onMouseDown() {
+    const Event = Laya.Event;
+    console.log("Laya.stage.mouseX", Laya.stage.mouseX, Laya.stage.mouseY);
+    //添加鼠标移到侦听
+    Laya.stage.on(Event.MOUSE_MOVE, this, this.onMouseMove);
 
-			let pinPosition = seg.getPinPosition();
-			let w = pinPosition.x - seg.x;
-			let h = pinPosition.y - seg.y;
+    Laya.stage.on(Event.MOUSE_UP, this, this.onMouseUp);
+  }
 
-			seg.x = targetX - w;
-			seg.y = targetY - h;
+  onMouseUp() {
+    const { mouseX, mouseY } = Laya.stage;
+    if (mouseX > mouseY) {
+      vx = mouseX;
+    } else {
+      vy = mouseY;
+    }
+  }
 
-			targetX = seg.x;
-			targetY = seg.y;
-		}
-	}
+  addSegment() {
+    let seg = new Segment(40, 30);
+    Laya.stage.addChildAt(seg, 0);
 
-	limitMoveRange() {
-		if (targetPosition.x < 0)
-			targetPosition.x = 0;
-		else if (targetPosition.x > Laya.stage.width)
-			targetPosition.x = Laya.stage.width;
-		if (targetPosition.y < 0)
-			targetPosition.y = 0;
-		else if (targetPosition.y > Laya.stage.height)
-			targetPosition.y = Laya.stage.height;
-	}
+    // 蛇尾与上一节身体对齐
+    if (segments.length > 0) {
+      let prevSeg = segments[segments.length - 1];
+      seg.rotation = prevSeg.rotation;
+      let point = seg.getPinPosition();
+      seg.x = prevSeg.x - point.x;
+      seg.y = prevSeg.y - point.y;
+    }
 
-	checkEatFood() {
-		let food;
-		for (let i = foods.length - 1; i >= 0; i--) {
-			food = foods[i];
-			if (food.hitTestPoint(targetPosition.x, targetPosition.y)) {
-				Laya.stage.removeChild(food);
-				foods.splice(i, 1);
-			}
-		}
-	}
+    segments.push(seg);
+  }
 
-	produceFood() {
-		const Sprite = Laya.Sprite;
+  animate() {
+    let seg = segments[0];
 
-		// 最多五个食物同屏
-		if (foods.length == 5)
-			return;
+    // 更新蛇的位置
+    while (targetPosition.x > 0) {
+      clearInterval(this.interval);
+      this.interval = setInterval(targetPosition.x--, 1500);
+    }
+    // targetPosition.y += vy;
 
-		let food = new Sprite();
-		Laya.stage.addChild(food);
-		foods.push(food);
+    // 限制蛇的移动范围
+    this.limitMoveRange();
+    // 检测觅食
+    this.checkEatFood();
 
-		const foodSize = 40;
-		food.size(foodSize, foodSize);
-		food.graphics.drawRect(0, 0, foodSize, foodSize, "#00BFFF");
+    // 更新所有关节位置
+    let targetX = targetPosition.x;
+    let targetY = targetPosition.y;
 
-		food.x = Math.random() * Laya.stage.width;
-		food.y = Math.random() * Laya.stage.height;
-	}
+    for (let i = 0, len = segments.length; i < len; i++) {
+      seg = segments[i];
+
+      let dx = targetX - seg.x;
+      let dy = targetY - seg.y;
+
+      let radian = Math.atan2(dy, dx);
+      seg.rotation = (radian * 180) / Math.PI;
+
+      let pinPosition = seg.getPinPosition();
+      let w = pinPosition.x - seg.x;
+      let h = pinPosition.y - seg.y;
+
+      seg.x = targetX - w;
+      seg.y = targetY - h;
+
+      targetX = seg.x;
+      targetY = seg.y;
+    }
+  }
+
+  limitMoveRange() {
+    if (targetPosition.x < 0) targetPosition.x = 0;
+    else if (targetPosition.x > Laya.stage.width)
+      targetPosition.x = Laya.stage.width;
+    if (targetPosition.y < 0) targetPosition.y = 0;
+    else if (targetPosition.y > Laya.stage.height)
+      targetPosition.y = Laya.stage.height;
+  }
+
+  checkEatFood() {
+    let food;
+    for (let i = foods.length - 1; i >= 0; i--) {
+      food = foods[i];
+      if (food.hitTestPoint(targetPosition.x, targetPosition.y)) {
+        this.addSegment();
+        Laya.stage.removeChild(food);
+        foods.splice(i, 1);
+      }
+    }
+  }
+
+  produceFood() {
+    const Sprite = Laya.Sprite;
+
+    // 最多五个食物同屏
+    if (foods.length == 5) return;
+
+    let food = new Sprite();
+    Laya.stage.addChild(food);
+    foods.push(food);
+
+    const foodSize = 40;
+    food.size(foodSize, foodSize);
+    food.graphics.drawRect(0, 0, foodSize, foodSize, "#00BFFF");
+
+    food.x = Math.random() * Laya.stage.width;
+    food.y = Math.random() * Laya.stage.height;
+  }
 }
 
 class Segment extends Laya.Sprite {
-	constructor(width, height) {
-		super();
-		this.size(width, height);
-		this.init();
-	}
-	
-	init() {
-		this.graphics.drawRect(-this.height / 2, -this.height / 2, this.width + this.height, this.height, "#FF7F50");
-	}
-	
-	// 获取关节另一头位置
-	getPinPosition() {
-		const Point = Laya.Point;
+  constructor(width, height) {
+    super();
+    this.size(width, height);
+    this.init();
+  }
 
-		let radian = this.rotation * Math.PI / 180;
-		let tx = this.x + Math.cos(radian) * this.width;
-		let ty = this.y + Math.sin(radian) * this.width;
-		
-		return new Point(tx, ty);
-	}
+  init() {
+    this.graphics.drawRect(
+      -this.height / 2,
+      -this.height / 2,
+      this.width + this.height,
+      this.height,
+      "#FF7F50"
+    );
+  }
+
+  // 获取关节另一头位置
+  getPinPosition() {
+    const Point = Laya.Point;
+
+    let radian = (this.rotation * Math.PI) / 180;
+    let tx = this.x + Math.cos(radian) * this.width;
+    let ty = this.y + Math.sin(radian) * this.width;
+
+    return new Point(tx, ty);
+  }
 }
 
 new InputDevice_GluttonousSnake();
