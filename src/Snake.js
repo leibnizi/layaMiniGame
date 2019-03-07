@@ -2,8 +2,8 @@ let seg,
   segments = [],
   foods = [],
   initialSegmentsAmount = 5,
-  vx = 0,
-  vy = 0,
+  currentMouseX = 0,
+  currentMouseY = 0,
   characterA,
   targetPosition;
 
@@ -52,14 +52,47 @@ class InputDevice_GluttonousSnake {
   }
 
   onMouseDown() {
-    const { Event, Tween } = Laya;
+    const {
+      Event,
+      Tween,
+      stage: { mouseX, mouseY }
+    } = Laya;
     Tween.to(this.characterA, { y: 0 }, 2000);
-    Laya.stage.on(Event.MOUSE_MOVE, this, this.onMouseMove);
+    console.log("MOUSE_DOWN mouseX", Laya.stage.mouseX);
+    this.currentMouseX = mouseX;
+    this.currentMouseY = mouseY;
+    Laya.stage.on(Event.MOUSE_UP, this, this.onMouseUp);
+    Laya.stage.on(Event.MOUSE_OUT, this, this.onMouseUp);
   }
 
-  tweenRight() {
-    console.log("Tween: ", Tween);
+  onMouseUp() {
+    const {
+      Event,
+      Tween,
+      stage: { mouseX, mouseY, designWidth, designHeight }
+    } = Laya;
+    const offsetX = mouseX - this.currentMouseX,
+      offsetY = mouseY - this.currentMouseY;
+    // Laya.stage.off(Event.MOUSE_UP, this, this.onMouseUp);
+    // Laya.stage.off(Event.MOUSE_OUT, this, this.onMouseUp);
 
+    if (Math.abs(offsetX) > Math.abs(offsetY)) {
+      if (offsetX > 0) {
+        this.tweenTo({ x: designWidth, y: this.characterA.y });
+      } else {
+        this.tweenTo({ x: 0, y: this.characterA.y });
+      }
+    } else {
+      if (offsetY > 0) {
+        this.tweenTo({ x: this.characterA.x, y: designHeight });
+      } else {
+        this.tweenTo({ x: this.characterA.x, y: 0 });
+      }
+    }
+  }
+
+  tweenTo(terminal) {
+    const { Tween } = Laya;
     // Laya.stage.graphics.drawLine(
     //   terminalX,
     //   0,
@@ -67,8 +100,7 @@ class InputDevice_GluttonousSnake {
     //   Laya.stage.height,
     //   "#FFFFFF"
     // );
-    Laya.stage.on(Event.MOUSE_UP, this, this.onMouseUp);
-    Tween.to(characterA, { x: terminalX }, 2000);
+    Tween.to(this.characterA, terminal, 2000);
   }
 
   createCharacter(skin) {
@@ -103,15 +135,6 @@ class InputDevice_GluttonousSnake {
         header.graphics.drawCircle(header.width, 5, 3, "#000000");
         header.graphics.drawCircle(header.width, -5, 3, "#000000");
       }
-    }
-  }
-
-  onMouseUp() {
-    const { mouseX, mouseY } = Laya.stage;
-    if (mouseX > mouseY) {
-      vx = mouseX;
-    } else {
-      vy = mouseY;
     }
   }
 
